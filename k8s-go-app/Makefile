@@ -19,3 +19,13 @@ build_container:
 
 push_container:
 	docker push  docker.io/$(USERNAME)/$(APP_NAME):$(VERSION)
+
+apply_deploy:
+	kubectl apply -f k8s/deployment.yaml
+
+apply_service:
+	kubectl apply -f k8s/service.yaml
+
+apply_ingress:
+	kubectl apply -f k8s/ingress.yaml
+
