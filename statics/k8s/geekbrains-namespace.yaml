@@ -1,0 +1,5 @@
+#custom namespace for minikube
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: geekbrains

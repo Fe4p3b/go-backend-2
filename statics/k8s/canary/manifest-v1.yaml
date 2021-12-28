@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statics-v1
+  labels:
+    app: statics
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: statics
+        version: v1.0.0
+    spec:
+      containers:
+        - name: statics
+          image: docker.io/fe4p3b/statics:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /__heartbeat__
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /__heartbeat__
+              port: 8080
+  selector:
+    matchLabels:
+      app: statics
+      version: v1.0.0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: statics
+  labels:
+    app: statics
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: statics
+    version: v1.0.0
+

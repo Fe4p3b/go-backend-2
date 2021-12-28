@@ -10,16 +10,26 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
+type Config struct {
+	Port        string `envconfig:"PORT" default:"8080"`
+	StaticsPath string `envconfig:"STATICS_PATH" default:"./static"`
+}
+
 func main() {
-	port := "8080"
+	config := new(Config)
+	err := envconfig.Process("", config)
+	if err != nil {
+		log.Fatalf("Can't process config: %v", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		err := Serve(ctx, port)
+		err := Serve(ctx, config)
 		if err != nil {
 			log.Println(fmt.Errorf("serve: %w", err))
 			return
@@ -36,17 +46,17 @@ func main() {
 
 }
 
-func Serve(ctx context.Context, port string) error {
+func Serve(ctx context.Context, config *Config) error {
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.Recover())
 	e.Use(middleware.Recover())
 
-	InitHandlers(e)
+	InitHandlers(e, config.StaticsPath)
 
 	go func() {
-		e.Logger.Infof("start server on port: %s", port)
-		err := e.Start(":" + port)
+		e.Logger.Infof("start server on port: %s", config.Port)
+		err := e.Start(":" + config.Port)
 		if err != nil {
 			e.Logger.Errorf("start server error: %v", err)
 		}
@@ -57,9 +67,10 @@ func Serve(ctx context.Context, port string) error {
 	return e.Shutdown(ctx)
 }
 
-func InitHandlers(e *echo.Echo) {
+func InitHandlers(e *echo.Echo, staticsPath string) {
 	e.GET("/", handler)
 	e.GET("/__heartbeat__", heartbeatHandler)
+	e.Static("/static", staticsPath)
 
 	e.Any("/*", func(c echo.Context) error {
 		return c.NoContent(http.StatusNotFound)
