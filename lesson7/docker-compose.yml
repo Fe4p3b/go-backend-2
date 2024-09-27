@@ -1,0 +1,77 @@
+version: "3.7"
+services:
+
+  api:
+    build:
+      dockerfile: Dockerfile
+      context: ./api
+    command: "./bin/api"
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+    ports:
+      - 8081:8080
+      - 8082:8081
+      - 8083:8082
+      - 8084:8083
+      - 8085:8084
+      - 8086:8085
+      - 8087:8086
+      - 8088:8087
+      - 8089:8088
+      - 8090:8089
+    depends_on:
+      - kafka
+      - redis
+
+  process:
+    build:
+      dockerfile: Dockerfile
+      context: ./process
+    command: "./bin/process"
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+    depends_on:
+      - kafka
+      - redis
+
+  kafka:
+    image: docker.io/bitnami/kafka:2-debian-10
+    ports:
+      - 9092:9092
+      - 9093:9093
+    environment:
+      # - KAFKA_BROKER_ID=1
+      # - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      # - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "kafka-topics.sh",
+          "--list",
+          "--zookeeper",
+          "zookeeper:2181"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 4
+
+  redis:
+    image: redis:6.0
+    ports:
+      - 6379:6379
+
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3-debian-10
+    ports:
+      - 2181:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
